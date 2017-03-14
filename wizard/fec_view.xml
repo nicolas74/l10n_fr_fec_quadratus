@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<openerp>
+<data>
+
+<record id="account_fr_fec_quadratus_view" model="ir.ui.view">
+    <field name="name">account.fr.fec.form.view</field>
+    <field name="model">account.fr.fec.quadratus</field>
+    <field name="arch" type="xml">
+        <form string="FEC Quadratus File Generation">
+            <group>
+                <field name="date_from"/>
+                <field name="date_to"/>
+                <!-- <field name="export_type" groups="base.group_no_one"/> -->
+            </group>
+            <footer>
+                <button string="Generate Quadratus" name="generate_fec_quadratus" type="object"
+                    class="oe_highlight"/>
+                <button string="Cancel" special="cancel"
+                    class="oe_link"/>
+            </footer>
+        </form>
+    </field>
+</record>
+
+<record id="account_fr_fec_quadratus_action" model="ir.actions.act_window">
+    <field name="name">FEC Quadratus</field>
+    <field name="res_model">account.fr.fec.quadratus</field>
+    <field name="view_mode">form</field>
+    <field name="target">new</field>
+</record>
+
+<menuitem id="account_reports_quadratus_menu" name="Quadratus" parent="account.menu_finance_reports" sequence="3" groups="account.group_account_user"/>
+
+<menuitem id="account_fr_fec_quadratus_menu"
+        parent="account_reports_quadratus_menu"
+        action="account_fr_fec_quadratus_action"
+        sequence="100" />
+
+</data>
+</openerp>

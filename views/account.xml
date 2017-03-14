@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<openerp>
+    <data>
+        <!-- Accounts -->
+        <record id="export_view_account_form" model="ir.ui.view">
+            <field name="name">export.account.account.form</field>
+            <field name="model">account.account</field>
+            <field name="inherit_id" ref="account.view_account_form"/>
+            <field name="arch" type="xml">
+                <field name="code" position="after">
+                    <group>
+                        <field name="optimized_export"/>
+                    </group>
+                </field>
+            </field>
+        </record>
+
+        <record id="export_view_account_journal_form" model="ir.ui.view">
+            <field name="name">export.account.journal.form</field>
+            <field name="model">account.journal</field>
+            <field name="inherit_id" ref="account.view_account_journal_form"/>
+            <field name="priority">1</field>
+            <field name="arch" type="xml">
+                <field name="code" position="after">
+                    <field name="extern_name"/>
+                </field>
+            </field>
+        </record>
+    </data>
+</openerp>
