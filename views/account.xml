@@ -10,6 +10,7 @@
                 <field name="code" position="after">
                     <group>
                         <field name="optimized_export"/>
+                        <field name="extern_code"/>
                     </group>
                 </field>
             </field>

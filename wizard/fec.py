@@ -29,14 +29,17 @@ class AccountFrFec(models.TransientModel):
         # So it will be easier for the accountant to check the file before
         # sending it to the fiscal administration
         header = [
-            'EcritureDate',  #
-            'EcritureNum',   #
-            'JournalCode',   #
-            'CompteNum',     #
-            'CompAuxLib',    #
-            'Debit',         #
-            'Credit',        #
-            'Ref'            #
+            'EcritureDate',      #
+            'EcritureNum',       #
+            'JournalCode',       #
+            'CompteNum',         #
+            'CompAuxLib',        #
+            'Debit',             #
+            'Credit',            #
+            'Ref',               #
+            'Date Echeance',     #
+            'Code Quadratus',    #
+            'Type Document'      #
             ]
 
         company = self.env.user.company_id
@@ -113,7 +116,10 @@ class AccountFrFec(models.TransientModel):
             replace(CASE WHEN aml.credit = 0 THEN '0,00' ELSE to_char(aml.credit, '999999999999999D99') END, '.', ',') AS Credit,
             aa.optimized_export AS optimized_export,
             aj.extern_name AS extern_name,
-            am.name AS name
+            am.name AS name,
+            am.date AS date,
+            rp.quadratus_account_number AS quadratus_account_number,
+            am.state AS state
         FROM
             account_move_line aml
             LEFT JOIN account_move am ON am.id=aml.move_id
@@ -146,9 +152,9 @@ class AccountFrFec(models.TransientModel):
             moveid=int(row[1])
 
             listrow = list(row)
-            _logger.info("row[3] =) " + str(row[3]) )
-            _logger.info("row[2] =) " + str(row[2]) )
-            _logger.info("row[7] =) " + str(row[7]) )
+            #_logger.info("row[3] =) " + str(row[3]) )
+            #_logger.info("row[2] =) " + str(row[2]) )
+            #_logger.info("row[7] =) " + str(row[7]) )
             optimized_export = False
             account_code = False
 
@@ -168,6 +174,15 @@ class AccountFrFec(models.TransientModel):
             # Account move Name
             # as listrow[7] has been twice already remove row 9 is infact row 7
             listrow[7] = str(row[9])
+            
+            # Echeance Date
+            listrow[8] = ""
+            
+            # Quadratus code
+            listrow[9] = str(row[11])
+            
+            # Document Type
+            listrow[10] = ""
 
             if optimized_export:
                 listrowprev = listrow

@@ -17,6 +17,7 @@ class AccountAccount(models.Model):
     _inherit = "account.account"
 
     optimized_export = fields.Boolean(index=True, default=False)
+    extern_code = fields.Char(string='External Code', required=True, translate=False)
 
 
 class AccountJournal(models.Model):
