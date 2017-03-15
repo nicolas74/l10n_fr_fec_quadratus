@@ -117,9 +117,9 @@ class AccountFrFec(models.TransientModel):
             aa.optimized_export AS optimized_export,
             aj.extern_name AS extern_name,
             am.name AS name,
-            am.date AS date,
+            TO_CHAR(aml.date_maturity, 'YYYYMMDD') AS date_maturity,
             rp.quadratus_account_number AS quadratus_account_number,
-            am.state AS state
+            ai.type AS type
         FROM
             account_move_line aml
             LEFT JOIN account_move am ON am.id=aml.move_id
@@ -128,6 +128,7 @@ class AccountFrFec(models.TransientModel):
             JOIN account_account aa ON aa.id = aml.account_id
             LEFT JOIN res_currency rc ON rc.id = aml.currency_id
             LEFT JOIN account_full_reconcile rec ON rec.id = aml.full_reconcile_id
+            LEFT JOIN account_invoice ai ON ai.id = aml.invoice_id
         WHERE
             am.date >= %s
             AND am.date <= %s
@@ -154,7 +155,7 @@ class AccountFrFec(models.TransientModel):
             listrow = list(row)
             #_logger.info("row[3] =) " + str(row[3]) )
             #_logger.info("row[2] =) " + str(row[2]) )
-            #_logger.info("row[7] =) " + str(row[7]) )
+            #_logger.info("row[10] =) " + str(row[10]) )
             optimized_export = False
             account_code = False
 
@@ -176,13 +177,18 @@ class AccountFrFec(models.TransientModel):
             listrow[7] = str(row[9])
             
             # Echeance Date
-            listrow[8] = ""
+            listrow[8] = str(row[10])
             
             # Quadratus code
             listrow[9] = str(row[11])
             
             # Document Type
-            listrow[10] = ""
+            if row[12] == 'out_invoice':
+                listrow[10] = "FACTURE"
+            elif row[12] == 'in_invoice':
+                listrow[10] = "AVOIR"
+            else:
+                listrow[10]= ""
 
             if optimized_export:
                 listrowprev = listrow

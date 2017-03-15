@@ -9,6 +9,9 @@ from openerp.tools import DEFAULT_SERVER_DATETIME_FORMAT
 from openerp.exceptions import UserError, ValidationError
 from openerp import api, fields, models, _
 
+import logging
+_logger = logging.getLogger(__name__)
+
 #----------------------------------------------------------
 # Accounts
 #----------------------------------------------------------
@@ -18,7 +21,6 @@ class AccountAccount(models.Model):
 
     optimized_export = fields.Boolean(index=True, default=False)
     extern_code = fields.Char(string='External Code', required=True, translate=False)
-
 
 class AccountJournal(models.Model):
     _inherit = "account.journal"
