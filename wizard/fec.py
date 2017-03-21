@@ -28,98 +28,73 @@ class AccountFrFec(models.TransientModel):
         # 2) CSV files are easier to read/use for a regular accountant.
         # So it will be easier for the accountant to check the file before
         # sending it to the fiscal administration
+        # header = [
+        #     'EcritureDate',      #
+        #     'EcritureNum',       #
+        #     'JournalCode',       #
+        #     'CompteNum',         #
+        #     'CompAuxLib',        #
+        #     'Debit',             #
+        #     'Credit',            #
+        #     'Ref',               #
+        #     'Date Echeance',     #
+        #     'Code Quadratus',    #
+        #     'Type Document'      #
+        #     ]
+
         header = [
-            'EcritureDate',      #
-            'EcritureNum',       #
-            'JournalCode',       #
-            'CompteNum',         #
-            'CompAuxLib',        #
-            'Debit',             #
-            'Credit',            #
-            'Ref',               #
-            'Date Echeance',     #
-            'Code Quadratus',    #
-            'Type Document'      #
+            'Date',                #  0
+            'Journal',             #  1
+            'CompteAuxiliaire',    #  2
+            ' ',                   #  3
+            'CompteProduit',       #  4
+            'Label',               #  5
+            'Debit',               #  6
+            'Credit',              #  7
+            'NumPiece',            #  8
+            'Date Echeance',       #  9
+            'TypeDocument'         # 10
             ]
 
         company = self.env.user.company_id
         if not company.vat:
             raise Warning(
-                _("Missing VAT number for company %s") % company.name)
+               _("Missing VAT number for company %s") % company.name)
         if company.vat[0:2] != 'FR':
             raise Warning(
                 _("FEC is for French companies only !"))
 
         fecfile = StringIO.StringIO()
-        w = csv.writer(fecfile, delimiter='|')
+        w = csv.writer(fecfile, delimiter=';')
         w.writerow(header)
 
+# - La colonne A : la date doit être sous le format JJ/MM/AAA (facilement modifiable sous Excel)
+# - La colonne B : le journal c'est ok
+# - La colonne C : le compte auxiliaire doit avoir 6 chiffres ( impératif sinon on doit rajouter les 0 à la main pour pouvoir être intégrer)
+# - La colonne E : les comptes de produits et de tva doivent avoir une longueur de 8 chiffres et le compte client est constitué du 411 + colonne C (soit 9 chiffres)
+# - La colonne F : le libellé c'est ok
+# - Les colonnes G et H : montant débit et crédit c'est ok
+# - La colonnes I : pour le numéro de pièces, il faut enlever FAC et les / car sinon c'est trop long et tout ne rentre pas
+# - La colonne J : pour la date d'échéance, le format est le même que le format de la date en JJ/MM/AAAA
+
+    #aj.code AS JournalCode,
+
         sql_query = '''
         SELECT
-            %s AS EcritureDate,
-            '-' AS EcritureNum,
-            '-' AS JournalCode,
-            MIN(aa.code) AS CompteNum,
-            '-' AS CompAuxLib,
-            replace(CASE WHEN sum(aml.balance) <= 0 THEN '0,00' ELSE to_char(SUM(aml.balance), '999999999999999D99') END, '.', ',') AS Debit,
-            replace(CASE WHEN sum(aml.balance) >= 0 THEN '0,00' ELSE to_char(-SUM(aml.balance), '999999999999999D99') END, '.', ',') AS Credit,
-            MIN(aa.id) AS CompteID
-        FROM
-            account_move_line aml
-            LEFT JOIN account_move am ON am.id=aml.move_id
-            JOIN account_account aa ON aa.id = aml.account_id
-            LEFT JOIN account_account_type aat ON aa.user_type_id = aat.id
-        WHERE
-            am.date < %s
-            AND am.company_id = %s
-            AND aat.include_initial_balance = 't'
-            AND (aml.debit != 0 OR aml.credit != 0)
-            AND am.state = 'posted'
-        '''
-
-        sql_query += '''
-        GROUP BY aml.account_id
-        HAVING sum(aml.balance) != 0
-        '''
-        formatted_date_from = self.date_from.replace('-', '')
-        self._cr.execute(
-            sql_query, (formatted_date_from, self.date_from, company.id))
-
-        for row in self._cr.fetchall():
-            listrow = list(row)
-            account_id = listrow.pop()
-
-            account = self.env['account.account'].browse(account_id)
-            if account.user_type_id.id == self.env.ref('account.data_unaffected_earnings').id:
-                #add the benefit/loss of previous fiscal year to the first unaffected earnings account found.
-                unaffected_earnings_line = True
-                current_amount = float(listrow[11].replace(',', '.')) - float(listrow[12].replace(',', '.'))
-                unaffected_earnings_amount = float(unaffected_earnings_results[11].replace(',', '.')) - float(unaffected_earnings_results[12].replace(',', '.'))
-                listrow_amount = current_amount + unaffected_earnings_amount
-                if listrow_amount > 0:
-                    listrow[11] = str(listrow_amount)
-                    listrow[12] = '0.00'
-                else:
-                    listrow[11] = '0.00'
-                    listrow[12] = str(listrow_amount)
-            w.writerow([s.encode("utf-8") for s in listrow])
-
-        # LINES
-        sql_query = '''
-        SELECT
-            TO_CHAR(am.date, 'YYYYMMDD') AS EcritureDate,
-            TO_CHAR(aml.move_id, '9999999999999') AS EcritureNum,
-            replace(aj.code, '|', '/') AS JournalCode,
-            aa.code AS CompteNum,
-            COALESCE(replace(rp.name, '|', '/'), '') AS CompAuxLib,
-            replace(CASE WHEN aml.debit = 0 THEN '0,00' ELSE to_char(aml.debit, '999999999999999D99') END, '.', ',') AS Debit,
-            replace(CASE WHEN aml.credit = 0 THEN '0,00' ELSE to_char(aml.credit, '999999999999999D99') END, '.', ',') AS Credit,
-            aa.optimized_export AS optimized_export,
+            TO_CHAR(am.date, 'DD/MM/YYYY') AS EcritureDate,
             aj.extern_name AS extern_name,
+            SUBSTRING(rp.quadratus_account_number from 2 for 6) AS quadratus_account_number,
+            aa.code AS CompteIntermed,
+            aa.code AS CompteNum,
+            COALESCE(replace(rp.name, '|', '/'), '') AS Label,
+            aml.debit  AS Debit,
+            aml.credit AS Credit,
             am.name AS name,
-            TO_CHAR(aml.date_maturity, 'YYYYMMDD') AS date_maturity,
-            rp.quadratus_account_number AS quadratus_account_number,
-            ai.type AS type
+            TO_CHAR(aml.date_maturity, 'DD/MM/YYYY') AS date_maturity,
+            ai.type AS type,
+            TO_CHAR(aml.move_id, '9999999999999') AS EcritureNum,
+            aa.optimized_export AS optimized_export
+
         FROM
             account_move_line aml
             LEFT JOIN account_move am ON am.id=aml.move_id
@@ -150,7 +125,7 @@ class AccountFrFec(models.TransientModel):
         currentmoveid = 0
         start = False
         for row in self._cr.fetchall():
-            moveid=int(row[1])
+            moveid=int(row[11])
 
             listrow = list(row)
             #_logger.info("row[3] =) " + str(row[3]) )
@@ -159,55 +134,92 @@ class AccountFrFec(models.TransientModel):
             optimized_export = False
             account_code = False
 
+            listrow[1]= str(row[1])
+
+            listrow[2]=  "'" + str(row[2]).ljust(6,'0') + ""
+
             if row[3].isdigit():
                 account_code = int(row[3])
 
-            if row[7] == True:
-                optimized_export = True
-            del listrow[7]
-            
+            # La colonne C : le compte auxiliaire doit avoir 6 chiffres
+            if row[3] == "411100":
+                listrow[4] = "411" + str(row[2])
+            else:
+                listrow[4]= str(row[4])
+
+            #listrow[5]= str(row[5]) Label
+
+            #listrow[6]= str(row[6]) Debit
+            #listrow[7]= str(row[7]) Credit
+
+            listrow[8] = listrow[8].replace('FACTURE', '')
+            listrow[8] = listrow[8].replace('FAC', '')
+            listrow[8] = listrow[8].replace('/', '')
+
+            listrow[9]= str(row[9])
+
+            listrow[11]= str(row[11])
+
             # Change JournalName by Extern Name if define
-            if row[8] != None :
-                listrow[2]= str(row[8])
+            #if row[8] != None :
+            #    listrow[2]= str(row[8])
             # as listrow[7] has been already remove row 8 is infact row 7
-            del listrow[7]
 
             # Account move Name
             # as listrow[7] has been twice already remove row 9 is infact row 7
-            listrow[7] = str(row[9])
+            #listrow[7] = str(row[9])
             
             # Echeance Date
-            listrow[8] = str(row[10])
+            #listrow[8] = str(row[10])
             
             # Quadratus code
-            listrow[9] = str(row[11])
-            
+            #listrow[2] = str(row[11])
+
             # Document Type
-            if row[12] == 'out_invoice':
+            if row[10] == 'out_invoice':
                 listrow[10] = "FACTURE"
-            elif row[12] == 'in_invoice':
+            elif row[10] == 'in_invoice':
                 listrow[10] = "AVOIR"
             else:
                 listrow[10]= ""
+
+            # optimized export or not
+            if row[12] == True:
+                 optimized_export = True
+
+            del listrow[12]
+            del listrow[11]
 
             if optimized_export:
                 listrowprev = listrow
                 # Start counter
                 if moveid != currentmoveid:
                     start = True
-                    creditsum = 0
                     debitsum = 0
-                creditsum_string = row[6].replace(',', '.')
-                debitsum_string = row[5].replace(',', '.')
-                creditsum += float(creditsum_string)
-                debitsum += float(debitsum_string)
+                    creditsum = 0
+                debitsum += row[6]
+                creditsum += row[7]
             else:
                 if start:
-                    if creditsum != 0:
-                        listrowprev[6]=str(creditsum).replace('.', ',')
                     if debitsum != 0:
-                        listrowprev[5]=str(debitsum).replace('.', ',')
+                        listrowprev[6]=str(debitsum).replace('.',',')
+                    else:
+                        listrowprev[6] = "0,0"
+                    if creditsum != 0:
+                        listrowprev[7]=str(creditsum).replace('.',',')
+                    else:
+                        listrowprev[7] = "0,0"
                     w.writerow([s.encode("utf-8") for s in listrowprev])
+
+
+#listrow =) [u'01/02/2017', 'None', 'x000002', u'411100', '41110000', 'SAS M. INNOVATION', '0,00', '              53,92', 'BNK1/2017/0009', '01/02/2017', None, '            64', 'None']
+
+
+                _logger.info("listrow =) " + str(listrow))
+                listrow[6]= str(row[6])
+                listrow[7]= str(row[7])
+                listrow[6]=listrow[6].replace('.',',')
+                listrow[7]=listrow[7].replace('.',',')
                 w.writerow([s.encode("utf-8") for s in listrow])
                 creditsum = 0
                 debitsum = 0
@@ -220,7 +232,6 @@ class AccountFrFec(models.TransientModel):
         fecvalue = fecfile.getvalue()
         self.write({
             'fec_data': base64.encodestring(fecvalue),
-            # Filename = <siren>FECYYYYMMDD where YYYMMDD is the closing date
             'filename': '%sFEC%s%s.csv' % (siren, end_date, suffix),
             })
         fecfile.close()
