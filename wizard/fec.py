@@ -142,7 +142,7 @@ class AccountFrFec(models.TransientModel):
                 account_code = int(row[3])
 
             # La colonne C : le compte auxiliaire doit avoir 6 chiffres
-            if row[3] == "411100":
+            if row[3] == "41110000":
                 listrow[4] = "411" + str(row[2])
             else:
                 listrow[4]= str(row[4])
