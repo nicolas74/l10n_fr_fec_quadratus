@@ -83,7 +83,7 @@ class AccountFrFec(models.TransientModel):
         SELECT
             TO_CHAR(am.date, 'DD/MM/YYYY') AS EcritureDate,
             aj.extern_name AS extern_name,
-            SUBSTRING(rp.quadratus_account_number from 2 for 6) AS quadratus_account_number,
+            SUBSTRING(rp.quadratus_account_number from 3 for 8) AS quadratus_account_number,
             aa.code AS CompteIntermed,
             aa.code AS CompteNum,
             COALESCE(replace(rp.name, '|', '/'), '') AS Label,
@@ -136,7 +136,7 @@ class AccountFrFec(models.TransientModel):
 
             listrow[1]= str(row[1])
 
-            listrow[2]=  "'" + str(row[2]).ljust(6,'0') + ""
+            listrow[2]=  "" + str(row[2]).ljust(6,'0') + ""
 
             if row[3].isdigit():
                 account_code = int(row[3])
@@ -209,7 +209,8 @@ class AccountFrFec(models.TransientModel):
                         listrowprev[7]=str(creditsum).replace('.',',')
                     else:
                         listrowprev[7] = "0,0"
-                    w.writerow([s.encode("utf-8") for s in listrowprev])
+                    if row[1] == 'VE':
+                        w.writerow([s.encode("utf-8") for s in listrowprev])
 
 
 #listrow =) [u'01/02/2017', 'None', 'x000002', u'411100', '41110000', 'SAS M. INNOVATION', '0,00', '              53,92', 'BNK1/2017/0009', '01/02/2017', None, '            64', 'None']
@@ -220,7 +221,8 @@ class AccountFrFec(models.TransientModel):
                 listrow[7]= str(row[7])
                 listrow[6]=listrow[6].replace('.',',')
                 listrow[7]=listrow[7].replace('.',',')
-                w.writerow([s.encode("utf-8") for s in listrow])
+                if row[1] == 'VE':
+                    w.writerow([s.encode("utf-8") for s in listrow])
                 creditsum = 0
                 debitsum = 0
                 start = False
