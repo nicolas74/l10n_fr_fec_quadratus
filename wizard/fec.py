@@ -133,9 +133,8 @@ class AccountFrFec(models.TransientModel):
             #_logger.info("row[10] =) " + str(row[10]) )
             optimized_export = False
             account_code = False
-
-            listrow[1]= str(row[1])
-
+            # After Issue 2017 09 06 listrow[1]= str(row[1])
+            listrow[1]= row[1]
             listrow[2]=  "" + str(row[2]).ljust(6,'0') + ""
 
             if row[3].isdigit():
