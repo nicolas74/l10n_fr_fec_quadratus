@@ -1,14 +1,20 @@
+# -*- coding: utf-8 -*-
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
-# Custom made by Yotech 
+# Custom made by Yotech
+
+
+import base64
+import io
+from datetime import datetime
+
+from odoo import api, fields, models, _
+from odoo.exceptions import Warning
+from odoo.tools import pycompat, DEFAULT_SERVER_DATE_FORMAT
 
 from odoo.tools.translate import _
 
-
-
 import odoo.addons.decimal_precision as dp
 from odoo.tools.float_utils import float_round, float_compare
-from odoo import api, fields, models, _
-
 
 import string
 import math
@@ -16,7 +22,6 @@ import time
 
 import logging
 _logger = logging.getLogger(__name__)
-
 
 class AccountFrFec(models.TransientModel):
     _name = "account.fr.fec.quadratus"
@@ -172,10 +177,10 @@ class AccountFrFec(models.TransientModel):
             # Account move Name
             # as listrow[7] has been twice already remove row 9 is infact row 7
             #listrow[7] = str(row[9])
-            
+
             # Echeance Date
             #listrow[8] = str(row[10])
-            
+
             # Quadratus code
             #listrow[2] = str(row[11])
 
