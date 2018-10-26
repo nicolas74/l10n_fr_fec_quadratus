@@ -1,13 +1,18 @@
-# -*- coding: utf-8 -*-
+# Part of Odoo. See LICENSE file for full copyright and licensing details.
+# Custom made by Yotech 
 
-import time
+from odoo.tools.translate import _
+
+
+
+import odoo.addons.decimal_precision as dp
+from odoo.tools.float_utils import float_round, float_compare
+from odoo import api, fields, models, _
+
+
+import string
 import math
-
-from openerp.osv import expression
-from openerp.tools.float_utils import float_round as round
-from openerp.tools import DEFAULT_SERVER_DATETIME_FORMAT
-from openerp.exceptions import UserError, ValidationError
-from openerp import api, fields, models, _
+import time
 
 import logging
 _logger = logging.getLogger(__name__)

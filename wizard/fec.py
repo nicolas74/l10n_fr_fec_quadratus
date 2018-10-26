@@ -1,13 +1,18 @@
-# -*- encoding: utf-8 -*-
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
+# Custom made by Yotech 
 
-# Copyright (C) 2013-2015 Akretion (http://www.akretion.com)
+from odoo.tools.translate import _
 
-from openerp import models, fields, api, _
-from openerp.exceptions import Warning
-import base64
-import StringIO
-import csv
+
+
+import odoo.addons.decimal_precision as dp
+from odoo.tools.float_utils import float_round, float_compare
+from odoo import api, fields, models, _
+
+
+import string
+import math
+import time
 
 import logging
 _logger = logging.getLogger(__name__)
