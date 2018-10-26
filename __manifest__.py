@@ -10,7 +10,7 @@
     'summary': "Fichier d'Échange Informatisé (FEC) for Quadratus",
     'author': "Yotech",
     'website': 'http://www.yotech.pro',
-    'depends': ['l10n_fr_fec','l10n_fr', 'account_accountant'],
+    'depends': ['l10n_fr','l10n_fr_fec','account'],
     'data': [
         'wizard/fec_view.xml',
         'views/account.xml',
