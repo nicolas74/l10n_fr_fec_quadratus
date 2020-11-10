@@ -1,1 +1,2 @@
-import account
+from . import account
+from . import res_partner
