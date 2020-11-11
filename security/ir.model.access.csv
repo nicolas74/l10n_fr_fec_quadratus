@@ -1,0 +1,2 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_account_fr_fec_quadratus,access_account_fr_fec_quadratus,model_account_fr_fec_quadratus,,1,1,1,1
