@@ -3,4 +3,4 @@
 
 # Copyright (C) 2013-2015 Akretion (http://www.akretion.com)
 
-import fec
+from . import fec

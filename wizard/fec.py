@@ -3,11 +3,12 @@
 
 # Copyright (C) 2013-2015 Akretion (http://www.akretion.com)
 
-from openerp import models, fields, api, _
-from openerp.exceptions import Warning
+from odoo import models, fields, api, _
+from odoo.exceptions import Warning
 import base64
-import StringIO
+import io
 import csv
+from odoo.tools import float_is_zero, pycompat
 
 import logging
 _logger = logging.getLogger(__name__)
@@ -17,7 +18,6 @@ class AccountFrFec(models.TransientModel):
     _name = "account.fr.fec.quadratus"
     _inherit = "account.fr.fec"
 
-    @api.multi
     def generate_fec_quadratus(self):
         self.ensure_one()
         # We choose to implement the flat file instead of the XML
@@ -64,8 +64,9 @@ class AccountFrFec(models.TransientModel):
             raise Warning(
                 _("FEC is for French companies only !"))
 
-        fecfile = StringIO.StringIO()
-        w = csv.writer(fecfile, delimiter=';')
+        fecfile = io.BytesIO()
+        # w = csv.writer(fecfile, delimiter=';')
+        w = pycompat.csv_writer(fecfile, delimiter=';')
         w.writerow(header)
 
 # - La colonne A : la date doit être sous le format JJ/MM/AAA (facilement modifiable sous Excel)
@@ -125,54 +126,30 @@ class AccountFrFec(models.TransientModel):
         currentmoveid = 0
         start = False
         for row in self._cr.fetchall():
-            moveid=int(row[11])
+            moveid = int(row[11])
 
             listrow = list(row)
-            #_logger.info("row[3] =) " + str(row[3]) )
-            #_logger.info("row[2] =) " + str(row[2]) )
-            #_logger.info("row[10] =) " + str(row[10]) )
             optimized_export = False
             account_code = False
             # After Issue 2017 09 06 listrow[1]= str(row[1])
-            listrow[1]= row[1]
-            listrow[2]=  "" + str(row[2]).ljust(6,'0') + ""
+            listrow[0] = row[0]
+            # listrow[1] =   "" + str(row[1]).ljust(6, '0') + ""
 
-            if row[3].isdigit():
-                account_code = int(row[3])
+            if row[2].isdigit():
+                account_code = int(row[2])
 
             # La colonne C : le compte auxiliaire doit avoir 6 chiffres
             if row[3] == "41110000":
-                listrow[4] = "411" + str(row[2])
+                listrow[4] = "411" + str(row[1])
             else:
-                listrow[4]= str(row[4])
-
-            #listrow[5]= str(row[5]) Label
-
-            #listrow[6]= str(row[6]) Debit
-            #listrow[7]= str(row[7]) Credit
+                listrow[4] = str(row[4])
 
             listrow[8] = listrow[8].replace('FACTURE', '')
             listrow[8] = listrow[8].replace('FAC', '')
             listrow[8] = listrow[8].replace('/', '')
 
-            listrow[9]= str(row[9])
-
-            listrow[11]= str(row[11])
-
-            # Change JournalName by Extern Name if define
-            #if row[8] != None :
-            #    listrow[2]= str(row[8])
-            # as listrow[7] has been already remove row 8 is infact row 7
-
-            # Account move Name
-            # as listrow[7] has been twice already remove row 9 is infact row 7
-            #listrow[7] = str(row[9])
-            
-            # Echeance Date
-            #listrow[8] = str(row[10])
-            
-            # Quadratus code
-            #listrow[2] = str(row[11])
+            listrow[9] = str(row[9])
+            listrow[11] = str(row[11])
 
             # Document Type
             if row[10] == 'out_invoice':
@@ -180,11 +157,11 @@ class AccountFrFec(models.TransientModel):
             elif row[10] == 'in_invoice':
                 listrow[10] = "AVOIR"
             else:
-                listrow[10]= ""
+                listrow[10] = ""
 
             # optimized export or not
-            if row[12] == True:
-                 optimized_export = True
+            if row[12]:
+                optimized_export = True
 
             del listrow[12]
             del listrow[11]
@@ -201,34 +178,31 @@ class AccountFrFec(models.TransientModel):
             else:
                 if start:
                     if debitsum != 0:
-                        listrowprev[6]=str(debitsum).replace('.',',')
+                        listrowprev[6] = str(debitsum).replace('.',',')
                     else:
                         listrowprev[6] = "0,0"
                     if creditsum != 0:
-                        listrowprev[7]=str(creditsum).replace('.',',')
+                        listrowprev[7] = str(creditsum).replace('.',',')
                     else:
                         listrowprev[7] = "0,0"
                     if row[1] == 'VE':
-                        w.writerow([s.encode("utf-8") for s in listrowprev])
-
+                        w.writerow([s.encode("utf-8").decode("utf-8") for s in listrowprev])
 
 #listrow =) [u'01/02/2017', 'None', 'x000002', u'411100', '41110000', 'SAS M. INNOVATION', '0,00', '              53,92', 'BNK1/2017/0009', '01/02/2017', None, '            64', 'None']
 
-
-                _logger.info("listrow =) " + str(listrow))
-                listrow[6]= str(row[6])
-                listrow[7]= str(row[7])
-                listrow[6]=listrow[6].replace('.',',')
-                listrow[7]=listrow[7].replace('.',',')
+                listrow[6] = str(row[6])
+                listrow[7] = str(row[7])
+                listrow[6] = listrow[6].replace('.', ',')
+                listrow[7] = listrow[7].replace('.', ',')
                 if row[1] == 'VE':
-                    w.writerow([s.encode("utf-8") for s in listrow])
+                    w.writerow([s.encode("utf-8").decode("utf-8") for s in listrow])
                 creditsum = 0
                 debitsum = 0
                 start = False
-            currentmoveid=moveid
+            currentmoveid = moveid
 
         siren = company.vat[4:13]
-        end_date = self.date_to.replace('-', '')
+        end_date = fields.Date.to_string(self.date_to).replace('-', '')
         suffix = '-NONOFFICIAL'
         fecvalue = fecfile.getvalue()
         self.write({

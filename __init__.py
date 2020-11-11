@@ -3,5 +3,5 @@
 
 # Copyright (C) 2013-2015 Akretion (http://www.akretion.com)
 
-import wizard
-import models
+from . import wizard
+from . import models
